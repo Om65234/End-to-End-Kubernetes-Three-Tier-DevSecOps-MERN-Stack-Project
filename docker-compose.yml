@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:5.0-alpine
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+    volumes:
+      - mongodb_data:/data/db
+
+  backend:
+    build: ./backend
+    ports:
+      - "3500:3500"
+    environment:
+      PORT: 3500
+      MONGO_CONN_STR: mongodb://root:rootpassword@mongodb:27017/tasks?authSource=admin
+      USE_DB_AUTH: "true"
+    depends_on:
+      - mongodb
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_API_URL: http://localhost:3500
+    depends_on:
+      - backend
+
+volumes:
+  mongodb_data:
