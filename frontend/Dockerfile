@@ -1,8 +1,22 @@
-FROM node:18-alpine
+# Stage 1 - Build
+FROM node:18-alpine AS builder
+
 WORKDIR /usr/src/app
-ENV NODE_ENV=production
+
 COPY package*.json ./
-RUN npm ci
+RUN npm install
+
 COPY . .
-EXPOSE 3000
-CMD ["npm", "start"]
+
+ENV NODE_OPTIONS=--openssl-legacy-provider
+
+RUN npm run build
+
+# Stage 2 - Serve
+FROM nginx:alpine
+
+COPY --from=builder /usr/src/app/build /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
