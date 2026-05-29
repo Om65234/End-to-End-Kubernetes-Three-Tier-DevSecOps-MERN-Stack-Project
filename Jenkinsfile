@@ -11,7 +11,7 @@ pipeline {
 
         stage('Clone Repository') {
             steps {
-                git 'YOUR_GITHUB_REPO_URL'
+                git 'https://github.com/Om65234/End-to-End-Kubernetes-Three-Tier-DevSecOps-MERN-Stack-Project.git'
             }
         }
 
