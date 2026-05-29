@@ -9,11 +9,7 @@ pipeline {
 
     stages {
 
-        stage('Clone Repository') {
-            steps {
-                git 'https://github.com/Om65234/End-to-End-Kubernetes-Three-Tier-DevSecOps-MERN-Stack-Project.git'
-            }
-        }
+
 
         stage('Build Backend Docker Image') {
             steps {
