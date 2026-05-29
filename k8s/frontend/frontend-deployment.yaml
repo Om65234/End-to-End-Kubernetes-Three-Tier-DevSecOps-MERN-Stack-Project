@@ -5,7 +5,7 @@ metadata:
   name: frontend
 
 spec:
-  replicas: 2
+  replicas: 4
 
   selector:
     matchLabels:
@@ -20,9 +20,9 @@ spec:
       containers:
         - name: frontend
 
-          image: application-code-frontend
+          image: omkar1907/mern-frontend:latest
 
-          imagePullPolicy: Never
+          imagePullPolicy: Always
 
           ports:
-            - containerPort: 80
+            - containerPort: 80 
