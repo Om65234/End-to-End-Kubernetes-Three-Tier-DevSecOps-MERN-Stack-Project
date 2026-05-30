@@ -36,10 +36,10 @@ stages {
     stage('Docker Compose Validation') {
         steps {
             sh '''
-            docker compose up -d
+            docker-compose up -d
             sleep 20
-            docker compose ps
-            docker compose down
+            docker-compose ps
+            docker-compose down
             '''
         }
     }
