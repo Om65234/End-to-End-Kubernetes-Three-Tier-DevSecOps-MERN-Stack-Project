@@ -20,7 +20,7 @@ spec:
       containers:
         - name: frontend
 
-          image: omkar1907/mern-frontend:v18
+          image: omkar1907/mern-frontend:v19
 
           imagePullPolicy: Always
 
