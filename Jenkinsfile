@@ -69,7 +69,7 @@
 
                 git commit -m "Updated image tag to $IMAGE_TAG" || true
 
-                git push https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/Om65234/End-to-End-Kubernetes-Three-Tier-DevSecOps-MERN-Stack-Project.git HEAD:main
+                git push https://$GITHUB_USERNAME:${GITHUB_TOKEN_PSW}@github.com/Om65234/End-to-End-Kubernetes-Three-Tier-DevSecOps-MERN-Stack-Project.git HEAD:main
                 """
             }
         }
