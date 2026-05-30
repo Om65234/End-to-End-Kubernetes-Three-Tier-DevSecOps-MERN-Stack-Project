@@ -67,7 +67,7 @@
                 git add k8s/frontend/frontend-deployment.yaml
                 git add k8s/backend/backend-deployment.yaml
 
-                git commit -m "Updated image tag to $IMAGE_TAG" || true
+                git commit -m "[skip ci] Updated image tag to $IMAGE_TAG"
 
                 git push https://$GITHUB_USERNAME:${GITHUB_TOKEN_PSW}@github.com/Om65234/End-to-End-Kubernetes-Three-Tier-DevSecOps-MERN-Stack-Project.git HEAD:main
                 """
