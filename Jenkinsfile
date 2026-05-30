@@ -51,9 +51,9 @@
         stage('Update Kubernetes Manifests') {
             steps {
                 sh """
-                sed -i 's|image: omkar1907/mern-frontend:.*|image: omkar1907/mern-frontend:$IMAGE_TAG|' k8s/frontend/deployment.yaml
+                sed -i 's|image: omkar1907/mern-frontend:.*|image: omkar1907/mern-frontend:$IMAGE_TAG|' k8s/frontend/frontend-deployment.yaml
 
-                sed -i 's|image: omkar1907/mern-backend:.*|image: omkar1907/mern-backend:$IMAGE_TAG|' k8s/backend/deployment.yaml
+                sed -i 's|image: omkar1907/mern-backend:.*|image: omkar1907/mern-backend:$IMAGE_TAG|' k8s/backend/backend-deployment.yaml
                 """
             }
         }
@@ -64,8 +64,8 @@
                 git config --global user.email "jenkins@example.com"
                 git config --global user.name "Jenkins"
 
-                git add k8s/frontend/deployment.yaml
-                git add k8s/backend/deployment.yaml
+                git add k8s/frontend/frontend-deployment.yaml
+                git add k8s/backend/backend-deployment.yaml
 
                 git commit -m "Updated image tag to $IMAGE_TAG" || true
 
