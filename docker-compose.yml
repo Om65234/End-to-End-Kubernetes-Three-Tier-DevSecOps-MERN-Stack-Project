@@ -21,7 +21,6 @@ services:
 
   backend:
     build: ./backend
-    container_name: backend
 
     ports:
       - "3500:3500"
@@ -39,7 +38,7 @@ services:
 
   frontend:
     build: ./frontend
-    container_name: frontend
+  
 
     ports:
       - "3000:80"
