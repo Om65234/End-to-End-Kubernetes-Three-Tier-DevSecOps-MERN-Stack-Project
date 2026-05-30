@@ -6,7 +6,7 @@ environment {
     DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
     DOCKERHUB_USERNAME = 'omkar1907'
 
-    GITHUB_TOKEN = credentials('github-token')
+    GITHUB_TOKEN = credentials('github-access token')
     GITHUB_USERNAME = 'Om65234'
 
     IMAGE_TAG = "v${BUILD_NUMBER}"
