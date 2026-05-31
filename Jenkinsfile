@@ -2,7 +2,14 @@ pipeline {
 
 agent any
 
+options {
+    timeout(time: 60, unit: 'MINUTES')
+    disableConcurrentBuilds()
+    buildDiscarder(logRotator(numToKeepStr: '5'))
+}
+
 environment {
+
     DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
     DOCKERHUB_USERNAME = 'omkar1907'
 
@@ -10,21 +17,73 @@ environment {
     GITHUB_USERNAME = 'Om65234'
 
     IMAGE_TAG = "v${BUILD_NUMBER}"
-
-    MANIFEST_REPO = "https://github.com/Om65234/End-to-End-k8s-manifests.git"
 }
 
 stages {
 
     stage('Build Backend Docker Image') {
         steps {
-            sh 'docker build -t $DOCKERHUB_USERNAME/mern-backend:$IMAGE_TAG ./backend'
+            sh '''
+            docker build -t $DOCKERHUB_USERNAME/mern-backend:$IMAGE_TAG ./backend
+            '''
         }
     }
 
     stage('Build Frontend Docker Image') {
         steps {
-            sh 'docker build -t $DOCKERHUB_USERNAME/mern-frontend:$IMAGE_TAG ./frontend'
+            sh '''
+            docker build -t $DOCKERHUB_USERNAME/mern-frontend:$IMAGE_TAG ./frontend
+            '''
+        }
+    }
+
+    stage('Trivy Filesystem Scan') {
+        steps {
+            sh '''
+            trivy fs \
+            --severity HIGH,CRITICAL \
+            .
+            '''
+        }
+    }
+
+    stage('SonarQube Analysis') {
+
+        environment {
+            scannerHome = tool 'sonar-scanner'
+        }
+
+        steps {
+
+            withSonarQubeEnv('sonarqube') {
+
+                sh '''
+                $scannerHome/bin/sonar-scanner \
+                -Dsonar.projectName=mern-devsecops \
+                -Dsonar.projectKey=mern-devsecops \
+                -Dsonar.sources=.
+                '''
+            }
+        }
+    }
+
+    stage('Trivy Backend Image Scan') {
+        steps {
+            sh '''
+            trivy image \
+            --severity HIGH,CRITICAL \
+            $DOCKERHUB_USERNAME/mern-backend:$IMAGE_TAG
+            '''
+        }
+    }
+
+    stage('Trivy Frontend Image Scan') {
+        steps {
+            sh '''
+            trivy image \
+            --severity HIGH,CRITICAL \
+            $DOCKERHUB_USERNAME/mern-frontend:$IMAGE_TAG
+            '''
         }
     }
 
@@ -54,13 +113,17 @@ stages {
 
     stage('Push Backend Image') {
         steps {
-            sh 'docker push $DOCKERHUB_USERNAME/mern-backend:$IMAGE_TAG'
+            sh '''
+            docker push $DOCKERHUB_USERNAME/mern-backend:$IMAGE_TAG
+            '''
         }
     }
 
     stage('Push Frontend Image') {
         steps {
-            sh 'docker push $DOCKERHUB_USERNAME/mern-frontend:$IMAGE_TAG'
+            sh '''
+            docker push $DOCKERHUB_USERNAME/mern-frontend:$IMAGE_TAG
+            '''
         }
     }
 
@@ -86,21 +149,23 @@ stages {
 
     stage('Push Updated Manifest Repo') {
         steps {
+
             dir('manifests') {
+
                 sh '''
                 git config user.email "jenkins@example.com"
+
                 git config user.name "Jenkins"
 
                 git add .
 
-                git commit -m "Updated image tag to $IMAGE_TAG"
+                git commit -m "Updated image tag to $IMAGE_TAG" || true
 
                 git push https://$GITHUB_USERNAME:${GITHUB_TOKEN_PSW}@github.com/Om65234/End-to-End-k8s-manifests.git main
                 '''
             }
         }
     }
-
 }
 
 }
