@@ -50,23 +50,21 @@ stages {
 stage('OWASP Dependency-Check Scan') {
     steps {
 
-        dir('./backend') {
-            dependencyCheck(
-                additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit',
-                odcInstallation: 'OWASP-Dependency-Check'
-            )
-        }
+        dependencyCheck(
+            additionalArguments: '--scan ./backend --disableYarnAudit --disableNodeAudit',
+            odcInstallation: 'OWASP-Dependency-Check'
+        )
 
-        dir('./frontend') {
-            dependencyCheck(
-                additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit',
-                odcInstallation: 'OWASP-Dependency-Check'
-            )
-        }
+        dependencyCheck(
+            additionalArguments: '--scan ./frontend --disableYarnAudit --disableNodeAudit',
+            odcInstallation: 'OWASP-Dependency-Check'
+        )
 
         dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
     }
 }
+
+
 
 
 
