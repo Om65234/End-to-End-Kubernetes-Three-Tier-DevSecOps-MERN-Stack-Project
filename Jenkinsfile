@@ -47,26 +47,18 @@ stages {
         }
     }
 
+
 stage('OWASP Dependency-Check Scan') {
     steps {
 
         dependencyCheck(
-            additionalArguments: '--scan ./backend --disableYarnAudit --disableNodeAudit',
-            odcInstallation: 'OWASP-Dependency-Check'
-        )
-
-        dependencyCheck(
-            additionalArguments: '--scan ./frontend --disableYarnAudit --disableNodeAudit',
+            additionalArguments: '--scan ./backend ./frontend --disableYarnAudit --disableNodeAudit',
             odcInstallation: 'OWASP-Dependency-Check'
         )
 
         dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
     }
 }
-
-
-
-
 
     stage('SonarQube Analysis') {
 
