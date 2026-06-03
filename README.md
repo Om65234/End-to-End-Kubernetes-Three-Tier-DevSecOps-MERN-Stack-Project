@@ -9,6 +9,7 @@
 [![Kubernetes](https://img.shields.io/badge/Orchestration-Kubernetes-326CE5?logo=kubernetes&logoColor=white)](https://kubernetes.io/)
 [![AWS EKS](https://img.shields.io/badge/Cloud-AWS%20EKS-FF9900?logo=amazon-aws&logoColor=white)](https://aws.amazon.com/eks/)
 [![SonarQube](https://img.shields.io/badge/SAST-SonarQube-4E9BCD?logo=sonarqube&logoColor=white)](https://www.sonarqube.org/)
+[![OWASP](https://img.shields.io/badge/SCA-OWASP%20Dependency--Check-blue)](https://owasp.org/www-project-dependency-check/)
 [![Trivy](https://img.shields.io/badge/Security-Trivy-1904DA?logo=aqua&logoColor=white)](https://aquasecurity.github.io/trivy/)
 [![Prometheus](https://img.shields.io/badge/Monitoring-Prometheus-E6522C?logo=prometheus&logoColor=white)](https://prometheus.io/)
 [![Grafana](https://img.shields.io/badge/Dashboards-Grafana-F46800?logo=grafana&logoColor=white)](https://grafana.com/)
@@ -185,7 +186,7 @@ Jenkins-pipeline/  (this repo)
 │   ├── frontend/                   # React SPA (Material-UI)
 │   │   ├── src/                    # React components & logic
 │   │   ├── public/
-│   │   ├── Dockerfile              # Multi-stage: build → Nginx serve
+│   │   ├── Dockerfile              # Multi-stage: node:18-alpine (build) → nginx:alpine (serve)
 │   │   └── package.json
 │   │
 │   ├── terraform/                  # IaC — provisions AWS EKS cluster
@@ -371,36 +372,37 @@ In Jenkins: **Manage Jenkins → Tools** → add SonarQube Scanner:
 
 ## 🔄 Phase 3 — CI Pipeline Stages
 
-The [`Jenkinsfile`](./Jenkinsfile) defines **13 fully automated stages**:
+The [`Jenkinsfile`](./Jenkinsfile) defines **14 fully automated stages**:
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                     JENKINS PIPELINE FLOW                        │
 ├──────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  [1] Build Backend Image ──► docker build mern-backend:v{N}      │
-│  [2] Build Frontend Image ─► docker build mern-frontend:v{N}     │
+│  [1]  Build Backend Image  ─► docker build mern-backend:v{N}     │
+│  [2]  Build Frontend Image ─► docker build mern-frontend:v{N}    │
 │         │                                                        │
 │         ▼                                                        │
-│  [3] Trivy FS Scan ────────► severity: HIGH, CRITICAL            │
-│  [4] SonarQube SAST ───────► project: mern-devsecops             │
+│  [3]  Trivy FS Scan ───────► severity: HIGH, CRITICAL            │
+│  [4]  OWASP Dependency-Check► SCA scan: backend + frontend       │
+│  [5]  SonarQube SAST ──────► project: mern-devsecops             │
 │         │                                                        │
 │         ▼                                                        │
-│  [5] Trivy Backend Image Scan                                    │
-│  [6] Trivy Frontend Image Scan                                   │
+│  [6]  Trivy Backend Image Scan                                   │
+│  [7]  Trivy Frontend Image Scan                                  │
 │         │                                                        │
 │         ▼                                                        │
-│  [7] Docker Login ─────────► DockerHub authentication            │
-│  [8] Docker Compose Test ──► up → sleep 20s → ps → down          │
+│  [8]  Docker Login ────────► DockerHub authentication            │
+│  [9]  Docker Compose Test ─► up → sleep 20s → ps → down          │
 │         │                                                        │
 │         ▼                                                        │
-│  [9]  Push Backend Image ──► omkar1907/mern-backend:v{N}         │
-│  [10] Push Frontend Image ─► omkar1907/mern-frontend:v{N}        │
+│  [10] Push Backend Image ──► omkar1907/mern-backend:v{N}         │
+│  [11] Push Frontend Image ─► omkar1907/mern-frontend:v{N}        │
 │         │                                                        │
 │         ▼                                                        │
-│  [11] Clone Manifests Repo                                       │
-│  [12] Update Image Tags (sed)                                    │
-│  [13] Push Updated Manifests ──► triggers ArgoCD sync            │
+│  [12] Clone Manifests Repo                                       │
+│  [13] Update Image Tags (sed)                                    │
+│  [14] Push Updated Manifests ─► triggers ArgoCD sync            │
 │                                                                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
