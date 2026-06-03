@@ -47,6 +47,29 @@ stages {
         }
     }
 
+stage('OWASP Dependency-Check Scan') {
+    steps {
+
+        dir('./backend') {
+            dependencyCheck(
+                additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit',
+                odcInstallation: 'OWASP-Dependency-Check'
+            )
+        }
+
+        dir('./frontend') {
+            dependencyCheck(
+                additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit',
+                odcInstallation: 'OWASP-Dependency-Check'
+            )
+        }
+
+        dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+    }
+}
+
+
+
     stage('SonarQube Analysis') {
 
         environment {
