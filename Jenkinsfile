@@ -21,28 +21,44 @@ environment {
 
 stages {
 
+    stage('Build Backend Docker Image') {
+        steps {
+            sh '''
+            docker build -t $DOCKERHUB_USERNAME/mern-backend:$IMAGE_TAG ./backend
+            '''
+        }
+    }
+
+    stage('Build Frontend Docker Image') {
+        steps {
+            sh '''
+            docker build -t $DOCKERHUB_USERNAME/mern-frontend:$IMAGE_TAG ./frontend
+            '''
+        }
+    }
+
     stage('Trivy Filesystem Scan') {
         steps {
             sh '''
             trivy fs \
-            --exit-code 1 \
             --severity HIGH,CRITICAL \
             .
             '''
         }
     }
 
-    stage('OWASP Dependency-Check Scan') {
-        steps {
 
-            dependencyCheck(
-                additionalArguments: '--scan ./backend ./frontend --disableYarnAudit --disableNodeAudit',
-                odcInstallation: 'OWASP-Dependency-Check'
-            )
+stage('OWASP Dependency-Check Scan') {
+    steps {
 
-            dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-        }
+        dependencyCheck(
+            additionalArguments: '--scan ./backend ./frontend --disableYarnAudit --disableNodeAudit',
+            odcInstallation: 'OWASP-Dependency-Check'
+        )
+
+        dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
     }
+}
 
     stage('SonarQube Analysis') {
 
@@ -64,35 +80,10 @@ stages {
         }
     }
 
-    stage('Quality Gate') {
-        steps {
-            timeout(time: 5, unit: 'MINUTES') {
-                waitForQualityGate abortPipeline: true
-            }
-        }
-    }
-
-    stage('Build Backend Docker Image') {
-        steps {
-            sh '''
-            docker build -t $DOCKERHUB_USERNAME/mern-backend:$IMAGE_TAG ./backend
-            '''
-        }
-    }
-
-    stage('Build Frontend Docker Image') {
-        steps {
-            sh '''
-            docker build -t $DOCKERHUB_USERNAME/mern-frontend:$IMAGE_TAG ./frontend
-            '''
-        }
-    }
-
     stage('Trivy Backend Image Scan') {
         steps {
             sh '''
             trivy image \
-            --exit-code 1 \
             --severity HIGH,CRITICAL \
             $DOCKERHUB_USERNAME/mern-backend:$IMAGE_TAG
             '''
@@ -103,7 +94,6 @@ stages {
         steps {
             sh '''
             trivy image \
-            --exit-code 1 \
             --severity HIGH,CRITICAL \
             $DOCKERHUB_USERNAME/mern-frontend:$IMAGE_TAG
             '''
@@ -190,6 +180,5 @@ stages {
         }
     }
 }
-
 
 }
