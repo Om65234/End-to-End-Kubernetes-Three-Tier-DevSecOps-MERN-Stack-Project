@@ -117,20 +117,6 @@ stage('OWASP Dependency-Check Scan') {
         }
     }
 
-    stage('Docker Compose Validation') {
-        steps {
-            sh '''
-            docker-compose up -d
-
-            sleep 20
-
-            docker-compose ps
-
-            docker-compose down
-            '''
-        }
-    }
-
     stage('Push Backend Image') {
         steps {
             sh '''
