@@ -17,6 +17,10 @@ environment {
     GITHUB_USERNAME = 'Om65234'
 
     IMAGE_TAG = "v${BUILD_NUMBER}"
+
+    // Backend API URL baked into the React build
+    // Uses relative path so nginx ingress proxies /api/tasks -> backend service
+    REACT_APP_BACKEND_URL = '/api/tasks'
 }
 
 stages {
@@ -32,7 +36,10 @@ stages {
     stage('Build Frontend Docker Image') {
         steps {
             sh '''
-            docker build -t $DOCKERHUB_USERNAME/mern-frontend:$IMAGE_TAG ./frontend
+            docker build \
+            --build-arg REACT_APP_BACKEND_URL=$REACT_APP_BACKEND_URL \
+            -t $DOCKERHUB_USERNAME/mern-frontend:$IMAGE_TAG \
+            ./frontend
             '''
         }
     }
@@ -178,6 +185,24 @@ stage('OWASP Dependency-Check Scan') {
                 '''
             }
         }
+    }
+}
+
+post {
+    success {
+        echo "========================================"
+        echo " Pipeline SUCCEEDED - Image: $IMAGE_TAG "
+        echo "========================================"
+    }
+    failure {
+        echo "========================================"
+        echo " Pipeline FAILED  - Check logs above   "
+        echo "========================================"
+    }
+    always {
+        // Clean up dangling Docker images to save disk space
+        sh 'docker image prune -f || true'
+        cleanWs()
     }
 }
 
