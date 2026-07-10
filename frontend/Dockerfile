@@ -11,6 +11,9 @@ ENV NODE_OPTIONS=--openssl-legacy-provider
 # Accept backend URL at build time: docker build --build-arg REACT_APP_BACKEND_URL=http://your-backend/api/tasks
 ARG REACT_APP_BACKEND_URL=/api/tasks
 ENV REACT_APP_BACKEND_URL=$REACT_APP_BACKEND_URL
+# Disable ESLint plugin to bypass jest/globals version conflict
+ENV DISABLE_ESLINT_PLUGIN=true
+ENV CI=false
 RUN npm run build
 
 

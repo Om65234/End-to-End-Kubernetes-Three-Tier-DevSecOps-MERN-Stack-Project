@@ -124,15 +124,24 @@ owasp-report/
 dependency-check-report/
 bandit-output/
 *.sarif
+**/dependency-check-report.xml
 
 # ─────────────────────────────────────────
-# 🚀 CI/CD
+# 🚀 Terraform
 # ─────────────────────────────────────────
-.terraform/
+**/.terraform/
 *.tfstate
-*.tfstate.backup
+*.tfstate.*
+*.tfstate.pull.json
 .terraform.lock.hcl
+terraform/crash.log
 ansible/*.retry
+
+# Terraform troubleshooting scripts
+terraform/fix_taint.py
+terraform/rm_state.py
+terraform/rm_state.ps1
+terraform/untaint.ps1
 
 # ─────────────────────────────────────────
 # 📊 Monitoring & Debug Artifacts
@@ -148,6 +157,3 @@ heap-*.heapsnapshot
 # package-lock.json   # if using yarn
 # yarn.lock           # if using npm
 
-# Logs
-logs/
-*.log
