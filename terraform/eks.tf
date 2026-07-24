@@ -13,30 +13,59 @@ module "eks" {
 
   enable_cluster_creator_admin_permissions = true
 
-  # ── EKS Managed Add-ons ──────────────────────────────────────────────────
   cluster_addons = {
     aws-ebs-csi-driver = {
       most_recent              = true
       service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
     }
+
     coredns = {
       most_recent = true
     }
+
     kube-proxy = {
       most_recent = true
     }
+
     vpc-cni = {
       most_recent = true
     }
   }
 
   eks_managed_node_groups = {
+
     default = {
       desired_size = 2
-      min_size     = 1
+      min_size     = 2
       max_size     = 3
 
       instance_types = ["t3.medium"]
+      capacity_type  = "ON_DEMAND"
+
+      labels = {
+        role = "application"
+      }
+    }
+
+    monitoring = {
+      desired_size = 1
+      min_size     = 1
+      max_size     = 2
+
+      instance_types = ["t3.medium"]
+      capacity_type  = "ON_DEMAND"
+
+      labels = {
+        role = "monitoring"
+      }
+
+      taints = {
+        monitoring = {
+          key    = "dedicated"
+          value  = "monitoring"
+          effect = "NO_SCHEDULE"
+        }
+      }
     }
   }
 
@@ -46,9 +75,10 @@ module "eks" {
   }
 }
 
-# ── IRSA Role for EBS CSI Driver ─────────────────────────────────────────────
-# The aws-ebs-csi-driver addon needs AWS IAM permissions to manage EBS volumes.
-# Without this role, the addon pods have no credentials and stay stuck in CREATING.
+# ─────────────────────────────────────────────────────────────────────────────
+# IRSA Role for EBS CSI Driver
+# ─────────────────────────────────────────────────────────────────────────────
+
 module "ebs_csi_irsa_role" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version = "~> 5.0"
@@ -59,7 +89,9 @@ module "ebs_csi_irsa_role" {
   oidc_providers = {
     ex = {
       provider_arn               = module.eks.oidc_provider_arn
-      namespace_service_accounts = ["kube-system:ebs-csi-controller-sa"]
+      namespace_service_accounts = [
+        "kube-system:ebs-csi-controller-sa"
+      ]
     }
   }
 

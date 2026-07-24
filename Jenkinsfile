@@ -60,6 +60,7 @@ pipeline {
                         --scan ./frontend
                         --disableYarnAudit
                         --disableNodeAudit
+                        --noupdate
                     '''
                 )
 
