@@ -13,6 +13,17 @@ module "eks" {
 
   enable_cluster_creator_admin_permissions = true
 
+  node_security_group_additional_rules = {
+    ingress_self_all = {
+      description = "Node to node all traffic"
+      protocol    = "-1"
+      from_port   = 0
+      to_port     = 0
+      type        = "ingress"
+      self        = true
+    }
+  }
+
   cluster_addons = {
     aws-ebs-csi-driver = {
       most_recent              = true

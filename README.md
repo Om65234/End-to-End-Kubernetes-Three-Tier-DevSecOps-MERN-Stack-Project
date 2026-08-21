@@ -101,35 +101,38 @@ GitHub (Application Repo)
 GitHub (K8s Manifests Repo)
     │  ArgoCD watches & detects drift
     ▼
-┌─────────────────────────────────────────────────────────┐
-│                    AWS EKS CLUSTER                       │
-│                                                         │
-│  ┌──────────────────────────────────────────────────┐   │
-│  │              Kubernetes Namespace: default        │   │
-│  │                                                  │   │
-│  │  ┌──────────┐   ┌──────────┐   ┌─────────────┐  │   │
-│  │  │ Frontend │   │ Backend  │   │   MongoDB   │  │   │
-│  │  │ (React)  │   │(Express) │   │  StatefulSet│  │   │
-│  │  │ 2 pods   │   │ 2 pods   │   │   1 pod     │  │   │
-│  │  └────┬─────┘   └────┬─────┘   └──────┬──────┘  │   │
-│  │       │              │                 │         │   │
-│  │  ┌────▼──────────────▼─────────────────▼──────┐  │   │
-│  │  │            NGINX Ingress Controller        │  │   │
-│  │  │    /      → frontend-service:80            │  │   │
-│  │  │    /api   → backend-service:3500           │  │   │
-│  │  └────────────────────┬───────────────────────┘  │   │
-│  └───────────────────────┼──────────────────────────┘   │
-│                           │                             │
-│  ┌────────────────────────▼──────────────────────────┐  │
-│  │           AWS Application Load Balancer            │  │
-│  └────────────────────────────────────────────────────┘  │
-│                                                         │
-│  ┌──────────────────────────────────────────────────┐   │
-│  │          Monitoring Namespace                    │   │
-│  │   Prometheus ──────────► Grafana Dashboards      │   │
-│  │   kube-state-metrics     Alertmanager            │   │
-│  └──────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────┘
+  ┌──────────────────────────────────────────────────────────┐
+  │              AWS EKS CLUSTER                             │
+  │                                                         │
+  │  ┌──────────────────────────────────────────────────┐   │
+  │  │              Kubernetes Namespace: default        │   │
+  │  │                                                  │   │
+  │  │  ┌──────────┐   ┌──────────┐   ┌─────────────┐  │   │
+  │  │  │ Frontend │   │ Backend  │   │   MongoDB   │  │   │
+  │  │  │ (React)  │   │(Express) │   │  StatefulSet│  │   │
+  │  │  │ 2 pods   │   │ 2 pods   │   │   1 pod     │  │   │
+  │  │  └────┬─────┘   └────┬─────┘   └─────────────┘  │   │
+  │  │       │              │                           │   │
+  │  │  ┌────▼──────────────▼───────────────────────┐  │   │
+  │  │  │          NGINX Ingress Controller          │  │   │
+  │  │  │   /         → frontend-service:80          │  │   │
+  │  │  │   /api      → backend-service:3500         │  │   │
+  │  │  │   /argocd   → argocd-server:80             │  │   │
+  │  │  │   /grafana  → monitoring-grafana:80         │  │   │
+  │  │  └────────────────────┬───────────────────────┘  │   │
+  │  └───────────────────────┼──────────────────────────┘   │
+  │                          │                              │
+  │  ┌───────────────────────▼──────────────────────────┐   │
+  │  │      AWS Network Load Balancer (single LB)        │   │
+  │  │  All services reachable via path-based routing    │   │
+  │  └──────────────────────────────────────────────────┘   │
+  │                                                         │
+  │  ┌──────────────────────────────────────────────────┐   │
+  │  │  Namespace: monitoring                           │   │
+  │  │  Prometheus ──────► Grafana (at /grafana)        │   │
+  │  │  Alertmanager      kube-state-metrics            │   │
+  │  └──────────────────────────────────────────────────┘   │
+  └─────────────────────────────────────────────────────────┘
 ```
 
 ### AWS Infrastructure (Terraform Provisioned)
@@ -427,26 +430,34 @@ kubectl create namespace argocd
 helm repo add argo https://argoproj.github.io/argo-helm
 helm repo update
 
+# Install with custom values (nodeSelector, rootpath, insecure mode)
 helm install argocd argo/argo-cd \
   --namespace argocd \
-  --set server.service.type=ClusterIP
+  -f k8s/argocd-values.yaml
 ```
 
-### 4.2 Expose ArgoCD UI via Ingress
+### 4.2 Expose ArgoCD via Ingress (Path-Based)
 
-Apply the ArgoCD ingress from this repo:
+ArgoCD is exposed at `/argocd` on the shared Load Balancer — no DNS or `/etc/hosts` needed:
 
 ```bash
-kubectl apply -f argocd-ingress.yaml
+# Apply the ingress (all three services in one file)
+kubectl apply -f k8s/ingress.yaml
+
+# Get the Load Balancer URL
+kubectl get svc -n ingress-nginx ingress-nginx-controller \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 ```
 
-Add `argocd.local` → ingress IP in `/etc/hosts`, then open `http://argocd.local`.
+Access ArgoCD at: `http://<LB-hostname>/argocd`
 
 ```bash
-# Get initial admin password
-kubectl get secret argocd-initial-admin-secret \
-  -n argocd \
-  -o jsonpath="{.data.password}" | base64 -d
+# Get initial admin password (PowerShell)
+[System.Text.Encoding]::UTF8.GetString(
+  [System.Convert]::FromBase64String(
+    (kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}")
+  )
+)
 ```
 
 ### 4.3 Create the ArgoCD Application
@@ -545,27 +556,33 @@ kubectl create namespace monitoring
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 
-helm install kube-prometheus-stack \
+# Install with custom values (nodeSelector, Grafana sub-path, SMTP alerts)
+helm install monitoring \
   prometheus-community/kube-prometheus-stack \
   --namespace monitoring \
-  --set grafana.adminPassword=Admin@123 \
-  --set prometheus.prometheusSpec.retention=15d
+  -f k8s/monitoring-values.yaml
 ```
+
+> The release name is `monitoring` — all resources are prefixed accordingly (e.g., `monitoring-grafana`).
 
 ### 5.3 Access Dashboards
 
 ```bash
-# Grafana (default: admin / Admin@123)
-kubectl port-forward svc/kube-prometheus-stack-grafana \
-  3000:80 -n monitoring
+# All services are accessible via the shared Load Balancer:
+# Get the LB hostname first:
+kubectl get svc -n ingress-nginx ingress-nginx-controller \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 
-# Prometheus
-kubectl port-forward svc/kube-prometheus-stack-prometheus \
-  9090:9090 -n monitoring
+# Then open in browser:
+# MERN App:    http://<LB>/
+# ArgoCD:      http://<LB>/argocd
+# Grafana:     http://<LB>/grafana
+# Prometheus:  kubectl port-forward svc/prometheus-operated 9090:9090 -n monitoring
+# Alertmanager: kubectl port-forward svc/alertmanager-operated 9093:9093 -n monitoring
 
-# Alertmanager
-kubectl port-forward svc/kube-prometheus-stack-alertmanager \
-  9093:9093 -n monitoring
+# Get Grafana admin password
+kubectl -n monitoring get secrets monitoring-grafana \
+  -o jsonpath="{.data.admin-password}" | base64 -d
 ```
 
 ### 5.4 What Prometheus Scrapes

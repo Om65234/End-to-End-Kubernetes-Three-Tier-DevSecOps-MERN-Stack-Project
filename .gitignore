@@ -136,6 +136,8 @@ bandit-output/
 .terraform.lock.hcl
 terraform/crash.log
 ansible/*.retry
+terraform.tfstate          # root-level tfstate (do not commit)
+terraform.tfstate.backup
 
 # Terraform troubleshooting scripts
 terraform/fix_taint.py
